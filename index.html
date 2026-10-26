@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#101010">
+<title>Clip Space</title>
+<style>
+:root{--bg:#101010;--panel:#1b1b1b;--panel2:#292929;--yellow:#ffe500;--text:#f5f5f5;--muted:#aaa;--line:#333}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font-family:Arial,Helvetica,sans-serif}
+button,input,select{font:inherit}
+button{cursor:pointer}
+header{position:sticky;top:0;z-index:5;background:rgba(17,17,17,.97);border-bottom:1px solid var(--line)}
+.top{display:flex;align-items:center;gap:14px;padding:14px 16px;max-width:1400px;margin:auto}
+.logo{font-size:21px;font-weight:900;white-space:nowrap;color:var(--yellow)}.logo span{color:white}
+.search{flex:1;min-width:0;background:var(--panel);border:1px solid #444;border-radius:24px;padding:12px 16px;color:white;outline:none}
+.search:focus{border-color:var(--yellow)}
+main{max-width:1400px;margin:auto;padding:16px}
+.nav{display:flex;gap:8px;overflow-x:auto;padding:10px 0 16px}
+.nav button,.action{border:0;border-radius:24px;padding:11px 15px;background:var(--panel2);color:white;white-space:nowrap}
+.nav button.active,.primary{background:var(--yellow);color:#111;font-weight:bold}
+.toolbar{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:16px}
+.toolbar select{background:var(--panel);border:1px solid #444;color:white;padding:11px;border-radius:10px;max-width:100%}
+.count{color:var(--muted);font-size:13px;margin-left:auto}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:22px 15px}
+.video{min-width:0}
+.thumb{width:100%;aspect-ratio:16/9;object-fit:cover;background:#292929;border-radius:11px;display:block;cursor:pointer}
+.thumb:hover{outline:2px solid var(--yellow)}
+.vtitle{font-weight:700;font-size:15px;line-height:1.4;margin:10px 0 5px;cursor:pointer}
+.vtitle:hover{color:var(--yellow)}
+.channel{color:var(--muted);font-size:13px}
+.vmeta{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-top:7px}
+.mini{background:none;border:0;color:#ddd;padding:5px;font-size:20px}
+.mini.saved{color:var(--yellow)}
+.page-title{font-size:23px;margin:12px 0 18px}
+.empty{padding:48px 12px;text-align:center;color:var(--muted)}
+.panel{background:var(--panel);padding:16px;border-radius:14px}
+.primary,.secondary{border:0;border-radius:9px;padding:11px 15px}
+.secondary{background:var(--panel2);border:1px solid #555;color:white}
+.hidden{display:none!important}
+.player-wrap{aspect-ratio:16/9;background:#000;border-radius:12px;overflow:hidden}
+.player-wrap iframe{width:100%;height:100%;border:0}
+.player-title{font-size:21px;font-weight:bold;line-height:1.4;margin-top:15px}
+.player-actions{display:flex;gap:8px;flex-wrap:wrap;margin:13px 0}
+.notice{background:#25220a;border:1px solid #625a00;color:#fff2a0;border-radius:10px;padding:12px;line-height:1.5;margin:12px 0}
+footer{text-align:center;color:#777;padding:28px 10px;font-size:12px}
+@media(max-width:550px){.top{padding:11px}.logo{font-size:18px}.grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:18px 10px}main{padding:11px}.vtitle{font-size:13px}.channel{font-size:12px}.thumb{border-radius:9px}.count{margin-left:0;width:100%}}
+</style>
+</head>
+<body>
+<header><div class="top">
+  <div class="logo">CLIP <span>SPACE</span></div>
+  <input id="search" class="search" placeholder="Cari video atau kanal..." aria-label="Cari video">
+</div></header>
+<main>
+  <nav class="nav" id="nav">
+    <button class="active" data-page="home">Beranda</button>
+    <button data-page="trending">Trending</button>
+    <button data-page="saved">Disimpan</button>
+    <button data-page="liked">Disukai</button>
+    <button data-page="history">Riwayat</button>
+    <button data-page="channels">Kanal</button>
+  </nav>
+  <section id="listing">
+    <div class="toolbar">
+      <select id="channelFilter" aria-label="Filter kanal"><option value="">Semua kanal</option></select>
+      <select id="sort" aria-label="Urutkan video">
+        <option value="default">Urutan awal</option>
+        <option value="az">Judul A–Z</option>
+        <option value="za">Judul Z–A</option>
+      </select>
+      <span id="count" class="count"></span>
+    </div>
+    <h2 id="heading" class="page-title">Semua video</h2>
+    <div id="grid" class="grid"></div>
+    <div id="empty" class="empty hidden">Video tidak ditemukan.</div>
+  </section>
+  <section id="playerPage" class="hidden">
+
+    <button class="secondary" id="back">← Kembali</button>
+
+    <div class="notice">
+      Jika pemutar menampilkan <b>Error 153</b>, halaman Preview lokal TrebEdit mungkin tidak mengirim informasi asal (Referer) yang dibutuhkan YouTube. Gunakan tombol <b>Buka di YouTube</b>, atau host file ini di HTTPS untuk mencoba pemutar tertanam.
+    </div>
+
+    <div class="player-wrap">
+<iframe
+  id="frame"
+  allow="autoplay; encrypted-media; picture-in-picture; fullscreen"
+  referrerpolicy="strict-origin-when-cross-origin"
+  title="Pemutar YouTube">
+</iframe>
+      </iframe>
+    </div>
+
+    <div class="player-title" id="playerTitle"></div>
+    <p class="channel" id="playerChannel"></p>
+
+    <div class="player-actions">
+      <button id="likeBtn" class="action">♡ Suka</button>
+      <button id="saveBtn" class="action">☆ Simpan</button>
+    </div>
+
+      <button id="youtubeBtn" class="action">Buka di YouTube ↗</button>
+    </div>
+    <h3>Video lainnya</h3><div id="related" class="grid"></div>
+  </section>
+  <section id="channelsPage" class="hidden">
+    <h2 class="page-title">Kanal</h2><div id="channelList" class="grid"></div>
+  </section>
+</main>
+<footer>Clip Space · Pemutaran video disediakan oleh YouTube</footer>
+<script>
+"use strict";
+const videos = [
+["Topi Sihir Animation","7 Hari Belajar Baking","R3VvEy1M1hA"],
+["Topi Sihir Animation","24 Jam Jadi Superhero","_EQmms2lMIQ"],
+["Topi Sihir Animation","7 Hari Pake Budget MBG","rgd-eJ_5TFQ"],
+["Topi Sihir Animation","Game Dinosaurus","8Y8hxuf55DY"],
+["Topi Sihir Animation","Game Dinosaurus 2","23_NDhiscj8"],
+["Topi Sihir Animation","Game Dinosaurus 3","7ImT6SSYEWU"],
+["Topi Sihir Animation","Game Dinosaurus 4","wn2oFj44wDA"],
+["John Casterline","I bought every AI slop ad to see what I get...","rc5sN_VYAZ0"],
+["Beluga","when a vegan plays Minecraft...","5t0vvPUH8Sg"],
+["Beluga","When Autocorrect Predicts The Future...","iNHi5QdqEBc"],
+["Beluga","When You Can Only Use Emojis...","e0QUlsydMTk"],
+["Beluga","When a Youtuber reveals their face","gcyH73VNgew"],
+["Beluga","When You Can't Use the Letter E","A93y_2051-I"],
+["Beluga","When Face ID doesn't recognize you","ar60RW4wNlY"],
+["Beluga","Youtubers when you unsubscribe:","EzCA-8vaPbA"],
+["Ethan Brown","Gucci Gucci Gucci Nike nike nike Dior Dior full video","-iiKGhZ75gQ"],
+["Sketch","car crash studio is diabolical","GNs6wgwoZLM"],
+["Sketch","HUSS VALLEY...","pFpJSVKjzzE"],
+["Sketch","Survive Hulk is unfortunately hilarious","dt74pK2NMRQ"],
+["Sketch","This Roblox Feature is genuinely terrible","Z058x18E5_4"],
+["Sketch","ROBLOX LAST STOP","_ekQYrFFqco"],
+["Sketch","Bots Never Left Roblox","MODj8VibMio"],
+["Sketch","ROBLOX QUIET PLACE IS EASY","89atOO33AZs"],
+["Sketch","Games with 0 Dislikes","pKpWlfa3SRo"],
+["Sketch","Roblox is doomed... so he remade it","-kC6Kd1uHEU"],
+["Sketch","WHEN THE VR PLAYER JOINS","t0eGaQ3h8OY"],
+["Sketch","PLAYING ANIMAL HOSPITAL","DyqU3rZPAvA"],
+["Sketch","A spot so good even his gang praised him","aFeKyt9SXmk"],
+["Sketch","A GAME TOO GOOD FOR ROBLOX","pcdepSyBIlk"],
+["Koloni Sirangga","top 5 kepencet emot german","lSkEudRmHxg"],
+["Koloni Sirangga","Top 5 WNI Stress","EBV7R_HQwio"],
+["Koloni Sirangga","Top 5 Prank Doorprize","x8ke0N0-eGs"],
+["Koloni Sirangga","Top 5 Lomba Gak Mau Kalah","0H82LTOunqk"],
+["Koloni Sirangga","Top 5 Tarik Tambang Tengil","wF0grfsp9bM"],
+["Koloni Sirangga","Top 5 Spiderman Anomali","bYDSHhkHJ-8"],
+["Koloni Sirangga","Top 5 Lomba Gagal","VaUpUe0grU0"],
+["MotoRaidoENG","In a dress on a MOTORCYCLE.. When it's really hot outside","iZibRXPs9uE"],
+["MotoRaidoENG","Took a Ukrainian Girl for a Ride on my motorcycle - Don’t Miss Her Reaction","Qxs29baBfB4"],
+["MotoRaidoENG","My Teacher Passenger Made ONE Mistake...","uGfr5XXnJvM"],
+["MotoRaidoENG","Her First Ride on a 1000cc BIKE!","p8gXfJN8u4A"],
+["MotoRaidoENG","she had nothing else to wear... When a girl hates wearing pants","EgBP-1ab_7E"],
+["Steven He","Types of Gamers in FPS","I5mYzr-2_Wo"],
+["Steven He","If 007 was Asian 2","zJ4MoYOKIIc"],
+["Steven He","If RPGs were Asian","9vSDOzAZ1WU"],
+["Steven He","If 007 was Asian","r1GMGZDSUAA"],
+["Steven He","When you realize you're fighting the main character 2","JFWUXUTPMB4"],
+["Steven He","If John Wick Was Asian 2","fro1kt4wCro"]
+].map((v,i)=>({id:i+1,channel:v[0],title:v[1],yt:v[2]}));
+
+const $=id=>document.getElementById(id);
+function readSet(key){try{return new Set(JSON.parse(localStorage.getItem(key)||"[]"));}catch(e){return new Set();}}
+let liked=readSet("clipspace_liked"),saved=readSet("clipspace_saved"),historyList=[];
+try{historyList=JSON.parse(localStorage.getItem("clipspace_history")||"[]");if(!Array.isArray(historyList))historyList=[];}catch(e){historyList=[];}
+let page="home",current=null;
+function persist(){localStorage.setItem("clipspace_liked",JSON.stringify([...liked]));localStorage.setItem("clipspace_saved",JSON.stringify([...saved]));localStorage.setItem("clipspace_history",JSON.stringify(historyList.slice(0,100)));}
+function esc(s){return String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));}
+function thumb(v){return "https://i.ytimg.com/vi/"+encodeURIComponent(v.yt)+"/hqdefault.jpg";}
+function card(v){let marked=saved.has(v.id);return `<article class="video"><img class="thumb" src="${thumb(v)}" alt="Thumbnail ${esc(v.title)}" loading="lazy" data-play="${v.id}"><div class="vtitle" data-play="${v.id}">${esc(v.title)}</div><div class="channel">${esc(v.channel)}</div><div class="vmeta"><span class="channel">YouTube</span><button class="mini ${marked?"saved":""}" data-save="${v.id}" aria-label="Simpan video">${marked?"★":"☆"}</button></div></article>`;}
+function renderGrid(target,list){const node=$(target);node.innerHTML=list.map(card).join("");node.querySelectorAll("[data-play]").forEach(el=>el.addEventListener("click",()=>play(Number(el.dataset.play))));node.querySelectorAll("[data-save]").forEach(el=>el.addEventListener("click",e=>{e.stopPropagation();toggle(saved,Number(el.dataset.save),"clipspace_saved");render();}));}
+function toggle(set,id,key){if(set.has(id))set.delete(id);else set.add(id);localStorage.setItem(key,JSON.stringify([...set]));}
+function populate(){const select=$("channelFilter");[...new Set(videos.map(v=>v.channel))].sort().forEach(ch=>{let o=document.createElement("option");o.value=ch;o.textContent=ch;select.appendChild(o);});$("channelList").innerHTML=[...new Set(videos.map(v=>v.channel))].map(ch=>`<article class="panel"><h3>${esc(ch)}</h3><p class="channel">${videos.filter(v=>v.channel===ch).length} video</p><button class="primary" data-channel="${esc(ch)}">Lihat video</button></article>`).join("");$("channelList").querySelectorAll("[data-channel]").forEach(b=>b.addEventListener("click",()=>{$("channelFilter").value=b.dataset.channel;setPage("home");render();}));}
+function render(){let q=$("search").value.trim().toLowerCase();let list=videos.filter(v=>(v.title+" "+v.channel).toLowerCase().includes(q));if($("channelFilter").value)list=list.filter(v=>v.channel===$("channelFilter").value);if(page==="saved")list=list.filter(v=>saved.has(v.id));if(page==="liked"||page==="trending")list=list.filter(v=>liked.has(v.id));if(page==="history")list=list.filter(v=>historyList.includes(v.id)).sort((a,b)=>historyList.indexOf(a.id)-historyList.indexOf(b.id));if($("sort").value==="az")list.sort((a,b)=>a.title.localeCompare(b.title));if($("sort").value==="za")list.sort((a,b)=>b.title.localeCompare(a.title));const headings={home:"Semua video",trending:"Trending · Video yang disukai",saved:"Video disimpan",liked:"Video disukai",history:"Riwayat tontonan"};$("heading").textContent=headings[page]||"Semua video";$("count").textContent=list.length+" video";renderGrid("grid",list);$("empty").classList.toggle("hidden",list.length>0);}
+function play(id){current=videos.find(v=>v.id===id);if(!current)return;historyList=[id,...historyList.filter(n=>n!==id)].slice(0,100);persist();$("listing").classList.add("hidden");$("channelsPage").classList.add("hidden");$("playerPage").classList.remove("hidden");$("frame").src="https://www.youtube.com/embed/"+encodeURIComponent(current.yt)+"?rel=0";$("playerTitle").textContent=current.title;$("playerChannel").textContent=current.channel;updatePlayerButtons();renderGrid("related",videos.filter(v=>v.id!==id).slice(0,8));window.scrollTo(0,0);}
+function updatePlayerButtons(){$("likeBtn").textContent=liked.has(current.id)?"♥ Disukai":"♡ Suka";$("saveBtn").textContent=saved.has(current.id)?"★ Tersimpan":"☆ Simpan";}
+function setPage(next){page=next;$("playerPage").classList.add("hidden");$("listing").classList.toggle("hidden",next==="channels");$("channelsPage").classList.toggle("hidden",next!=="channels");$("nav").querySelectorAll("button").forEach(b=>b.classList.toggle("active",b.dataset.page===next));if(next!=="channels")render();window.scrollTo(0,0);}
+$("nav").querySelectorAll("button").forEach(b=>b.addEventListener("click",()=>setPage(b.dataset.page)));
+$("search").addEventListener("input",()=>{if(page!=="channels")render();});
+$("channelFilter").addEventListener("change",render);$("sort").addEventListener("change",render);
+$("back").addEventListener("click",()=>{$("frame").src="about:blank";$("playerPage").classList.add("hidden");$("listing").classList.remove("hidden");render();window.scrollTo(0,0);});
+$("likeBtn").addEventListener("click",()=>{toggle(liked,current.id,"clipspace_liked");updatePlayerButtons();});
+$("saveBtn").addEventListener("click",()=>{toggle(saved,current.id,"clipspace_saved");updatePlayerButtons();});
+$("youtubeBtn").addEventListener("click",()=>{if(current)window.open("https://www.youtube.com/watch?v="+encodeURIComponent(current.yt),"_blank");});
+populate();render();
+</script>
+</body>
+</html>
